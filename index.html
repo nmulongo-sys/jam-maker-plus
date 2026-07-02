@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jam Maker +</title>
+<style>
+  :root{
+    --bg:#14141c; --panel:#1e1e2a; --panel2:#262636; --line:#34344a;
+    --txt:#e8e8f0; --mut:#9a9ab0; --acc:#f0a832; --acc2:#5ec8a0;
+    --rouge:#e06060; --orange:#e0a050; --vert:#5ec8a0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);line-height:1.45}
+  header{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:5}
+  header h1{font-size:1.15rem;margin:0;color:var(--acc);white-space:nowrap}
+  nav{display:flex;gap:4px;flex-wrap:wrap}
+  nav a{color:var(--mut);text-decoration:none;padding:6px 10px;border-radius:8px;font-size:.92rem}
+  nav a.actif{background:var(--panel2);color:var(--txt)}
+  #zone-user{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--mut)}
+  main{max-width:960px;margin:0 auto;padding:18px}
+  h2{font-size:1.25rem;margin:.2em 0 .6em}
+  h3{font-size:1.02rem;margin:1em 0 .4em;color:var(--acc)}
+  .carte{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .carte.clic{cursor:pointer}
+  .carte.clic:hover{border-color:var(--acc)}
+  .ligne{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .esp{margin-left:auto}
+  .mut{color:var(--mut);font-size:.86rem}
+  .chip{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.8rem;margin:2px}
+  .chip.acc{border-color:var(--acc);color:var(--acc)}
+  .chip.vert{border-color:var(--vert);color:var(--vert)}
+  .chip.orange{border-color:var(--orange);color:var(--orange)}
+  .chip.rouge{border-color:var(--rouge);color:var(--rouge)}
+  .pill{font-size:.78rem;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+  button,select,input,textarea{font:inherit;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  button{cursor:pointer}
+  button.prim{background:var(--acc);border-color:var(--acc);color:#14141c;font-weight:600}
+  button.mini{font-size:.8rem;padding:3px 9px}
+  form.bloc{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .jauge{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;flex:1;min-width:80px}
+  .jauge>div{height:100%;background:var(--acc2);transition:width .3s}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{color:var(--mut);font-weight:500;font-size:.8rem}
+  .bandeau-demo{background:#3a3220;color:var(--acc);font-size:.82rem;padding:6px 18px;text-align:center}
+  a{color:var(--acc2)}
+  .vide{color:var(--mut);font-style:italic;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div id="bandeau" class="bandeau-demo" hidden>
+  Mode démo — données locales à ce navigateur. Renseignez CONFIG dans le source pour brancher Supabase.
+</div>
+
+<header>
+  <h1>&#119070; Jam Maker +</h1>
+  <nav id="nav">
+    <a href="#/moi">Ma page</a>
+    <a href="#/repertoire">Répertoire</a>
+    <a href="#/projets">Projets</a>
+    <a href="#/evenements">Événements</a>
+    <a href="#/membres">Membres</a>
+  </nav>
+  <div id="zone-user"></div>
+</header>
+
+<main id="app"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   CONFIG — laisser vide pour le mode démo (localStorage).
+   Pour brancher Supabase : renseigner l'URL du projet et la
+   clé « anon » (Settings → API), après avoir exécuté schema.sql.
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL: "",
+  SUPABASE_ANON_KEY: ""
+};
+const MODE_DEMO = !CONFIG.SUPABASE_URL;
+
+const INSTRUMENTS = ["chant","guitare","basse","batterie","clavier","cuivres","violon","percussions","harmonica","autre"];
+const STATUTS_COMP = ["apprentissage","jouable","maitrise"];
+const ORDRE_STATUT = {apprentissage:0, jouable:1, maitrise:2};
+const LIB_STATUT = {apprentissage:"en apprentissage", jouable:"jouable", maitrise:"maîtrisé"};
+const LIB_BESOIN = {indispensable:"indispensable", souhaitable:"souhaitable", bonus:"bonus"};
+
+/* ---------- Données de démonstration ---------- */
+function donneesDemo(){
+  const m1={id:"m1",pseudo:"Jean"}, m2={id:"m2",pseudo:"Sophie"}, m3={id:"m3",pseudo:"Marc"}, m4={id:"m4",pseudo:"Léa"};
+  const c1={id:"c1",titre:"Hotel California",artiste:"Eagles",tonalite:"Bm",tempo:75,structure:"intro / couplets / solo / final",lien:""};
+  const c2={id:"c2",titre:"Superstition",artiste:"Stevie Wonder",tonalite:"Ebm",tempo:100,structure:"riff / couplets / pont",lien:""};
+  const p1={id:"p1",chanson_id:"c1",statut:"repetition",cree_par:"m1",cree_le:new Date().toISOString()};
+  return {
+    membres:[m1,m2,m3,m4],
+    chansons:[c1,c2],
+    competences:[
+      {id:"k1",membre_id:"m1",chanson_id:null,instrument:"guitare",statut:"maitrise"},
+      {id:"k2",membre_id:"m1",chanson_id:"c1",instrument:"guitare",statut:"maitrise"},
+      {id:"k3",membre_id:"m2",chanson_id:null,instrument:"chant",statut:"maitrise"},
+      {id:"k4",membre_id:"m2",chanson_id:"c1",instrument:"chant",statut:"jouable"},
+      {id:"k5",membre_id:"m3",chanson_id:null,instrument:"basse",statut:"jouable"},
+      {id:"k6",membre_id:"m3",chanson_id:"c1",instrument:"basse",statut:"jouable"},
+      {id:"k7",membre_id:"m4",chanson_id:null,instrument:"batterie",statut:"jouable"},
+      {id:"k8",membre_id:"m4",chanson_id:"c2",instrument:"batterie",statut:"jouable"}
+    ],
+    projets:[p1],
+    slots:[
+      {id:"s1",projet_id:"p1",instrument:"guitare",besoin:"indispensable",membre_id:"m1",invitation:"accepte"},
+      {id:"s2",projet_id:"p1",instrument:"chant",besoin:"indispensable",membre_id:"m2",invitation:"accepte"},
+      {id:"s3",projet_id:"p1",instrument:"basse",besoin:"indispensable",membre_id:"m3",invitation:"en_attente"},
+      {id:"s4",projet_id:"p1",instrument:"cuivres",besoin:"bonus",membre_id:null,invitation:null}
+    ],
+    partitions:[],
+    repetitions:[{id:"r1",projet_id:"p1",date:new Date(Date.now()+7*864e5).toISOString(),lieu:"local répète",notes:""}],
+    confirmations:[],
+    evenements:[{id:"e1",nom:"Jam de rentrée",date:new Date(Date.now()+30*864e5).toISOString(),lieu:"Café du Pont",cree_par:"m1",cree_le:new Date().toISOString()}],
+    participations:[{id:"pa1",evenement_id:"e1",membre_id:"m1",statut:"confirme"},{id:"pa2",evenement_id:"e1",membre_id:"m2",statut:"confirme"}],
+    playlist_items:[]
+  };
+}
+
+/* ============================================================
+   COUCHE DONNÉES — deux implémentations, même interface :
+   load() → remplit S ; insert/update/remove(table, ...) ;
+   uploadPartition(projetId, instrument, file) ; dataPartition(fichier).
+   ============================================================ */
+let S = null;            // état courant (cache de toutes les tables)
+let USER = null;         // membre connecté {id, pseudo}
+const CLE_DEMO = "jammaker.demo.v1";
+const CLE_USER = "jammaker.demo.user";
+
+const DemoAPI = {
+  async load(){
+    const brut = localStorage.getItem(CLE_DEMO);
+    S = brut ? JSON.parse(brut) : donneesDemo();
+    this._save();
+    const uid = localStorage.getItem(CLE_USER);
+    USER = S.membres.find(m=>m.id===uid) || S.membres[0];
+    localStorage.setItem(CLE_USER, USER.id);
+  },
+  _save(){ localStorage.setItem(CLE_DEMO, JSON.stringify(S)); },
+  async insert(table,row){ row.id = row.id || crypto.randomUUID(); S[table].push(row); this._save(); return row; },
+  async update(table,id,patch){ const r=S[table].find(x=>x.id===id); if(r) Object.assign(r,patch); this._save(); },
+  async remove(table,id){ S[table]=S[table].filter(x=>x.id!==id); this._save(); },
+  async uploadPartition(projetId, instrument, file){
+    if(file.size > 2*1024*1024){ alert("Mode démo : fichier limité à 2 Mo. Branchez Supabase pour de vrais uploads."); return null; }
+    const dataUrl = await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(file); });
+    const existantes = S.partitions.filter(p=>p.projet_id===projetId && p.instrument===instrument);
+    return this.insert("partitions",{projet_id:projetId,instrument,fichier:file.name,version:existantes.length+1,
+      uploade_par:USER.id,uploade_le:new Date().toISOString(),dataUrl});
+  },
+  async dataPartition(part){ return part.dataUrl || null; },
+  async setUser(id){ localStorage.setItem(CLE_USER,id); await this.load(); }
+};
+
+const SupaAPI = {
+  sb:null,
+  async init(){
+    await new Promise((res,rej)=>{ const s=document.createElement("script");
+      s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    this.sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  },
+  async load(){
+    const {data:{user}} = await this.sb.auth.getUser();
+    if(!user){ USER=null; S=null; return; }
+    S = {};
+    for(const t of ["membres","chansons","competences","projets","slots","partitions","repetitions","confirmations","evenements","participations","playlist_items"]){
+      const {data,error} = await this.sb.from(t).select("*");
+      if(error) throw error;
+      S[t] = data||[];
+    }
+    USER = S.membres.find(m=>m.id===user.id);
+    if(!USER){ // premier passage : créer le profil
+      const pseudo = prompt("Bienvenue ! Choisissez un pseudo :") || user.email.split("@")[0];
+      const {data} = await this.sb.from("membres").insert({id:user.id,pseudo}).select().single();
+      USER=data; S.membres.push(data);
+    }
+  },
+  async connexion(email){
+    const {error} = await this.sb.auth.signInWithOtp({email});
+    alert(error ? "Erreur : "+error.message : "Lien de connexion envoyé à "+email+". Ouvrez votre boîte mail.");
+  },
+  async deconnexion(){ await this.sb.auth.signOut(); location.reload(); },
+  async insert(table,row){ delete row.dataUrl; const {data,error}=await this.sb.from(table).insert(row).select().single();
+    if(error){alert("Erreur : "+error.message); throw error;} S[table].push(data); return data; },
+  async update(table,id,patch){ const {error}=await this.sb.from(table).update(patch).eq("id",id);
+    if(error){alert("Erreur : "+error.message); throw error;} const r=S[table].find(x=>x.id===id); if(r)Object.assign(r,patch); },
+  async remove(table,id){ const {error}=await this.sb.from(table).delete().eq("id",id);
+    if(error){alert("Erreur : "+error.message); throw error;} S[table]=S[table].filter(x=>x.id!==id); },
+  async uploadPartition(projetId, instrument, file){
+    const chemin = `${projetId}/${instrument}/${Date.now()}_${file.name}`;
+    const {error} = await this.sb.storage.from("partitions").upload(chemin,file);
+    if(error){alert("Erreur upload : "+error.message); return null;}
+    const existantes = S.partitions.filter(p=>p.projet_id===projetId && p.instrument===instrument);
+    return this.insert("partitions",{projet_id:projetId,instrument,fichier:chemin,version:existantes.length+1,uploade_par:USER.id});
+  },
+  async dataPartition(part){
+    const {data,error} = await this.sb.storage.from("partitions").download(part.fichier);
+    if(error) return null;
+    return await data.arrayBuffer();
+  }
+};
+
+const API = MODE_DEMO ? DemoAPI : SupaAPI;
+
+/* ============================================================
+   LOGIQUE MÉTIER
+   ============================================================ */
+const parId = (table,id) => (S[table]||[]).find(x=>x.id===id);
+const chanson = id => parId("chansons",id);
+const membre  = id => parId("membres",id);
+const pseudo  = id => (membre(id)||{pseudo:"?"}).pseudo;
+
+// Badges d'un membre = instruments distincts de ses compétences
+function badges(mid){
+  return [...new Set(S.competences.filter(k=>k.membre_id===mid).map(k=>k.instrument))];
+}
+// Le membre sait-il jouer (chanson, instrument) au niveau « jouable » ou plus ?
+function saitJouer(mid, chansonId, instrument){
+  return S.competences.some(k=>k.membre_id===mid && k.chanson_id===chansonId
+    && k.instrument===instrument && ORDRE_STATUT[k.statut]>=1);
+}
+// Dernier verdict d'un slot (répétitions)
+function dernierVerdict(slotId){
+  const c = S.confirmations.filter(c=>c.slot_id===slotId)
+    .sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  return c ? c.verdict : null;
+}
+// Complétude = % de slots indispensables pourvus ET dont le dernier verdict est « ça tient »
+function completude(projet){
+  const ind = S.slots.filter(s=>s.projet_id===projet.id && s.besoin==="indispensable");
+  if(!ind.length) return 0;
+  const ok = ind.filter(s=>s.membre_id && s.invitation==="accepte" && dernierVerdict(s.id)==="ca_tient");
+  return Math.round(100*ok.length/ind.length);
+}
+// Statut affiché d'un projet (dérivé)
+function statutDerive(projet){
+  if(projet.statut==="joue") return "joué";
+  const ind = S.slots.filter(s=>s.projet_id===projet.id && s.besoin==="indispensable");
+  if(!ind.length) return "brouillon";
+  if(ind.some(s=>!s.membre_id || s.invitation!=="accepte")) return "recrutement";
+  return completude(projet)===100 ? "jouable" : "en répétition";
+}
+// Membres confirmés à un événement
+function presents(evenementId){
+  return S.participations.filter(p=>p.evenement_id===evenementId && p.statut==="confirme").map(p=>p.membre_id);
+}
+/* Jouabilité d'un projet à un événement donné.
+   Pour chaque slot indispensable :
+   - titulaire présent → couvert (origine)
+   - sinon un présent qui « sait jouer » (chanson, instrument) → couvert (doublure)
+   - sinon → manquant
+   Retour : {niveau:'origine'|'doublure'|'non', doublures:[{instrument,membre_id}], manquants:[instrument]} */
+function jouabilite(evenementId, projet){
+  const la = presents(evenementId);
+  const ch = projet.chanson_id;
+  const ind = S.slots.filter(s=>s.projet_id===projet.id && s.besoin==="indispensable");
+  const doublures=[], manquants=[];
+  let origine = true;
+  for(const s of ind){
+    if(s.membre_id && s.invitation==="accepte" && la.includes(s.membre_id)) continue;
+    origine = false;
+    const dbl = la.find(mid=>saitJouer(mid,ch,s.instrument) && mid!==s.membre_id);
+    if(dbl) doublures.push({instrument:s.instrument,membre_id:dbl});
+    else manquants.push(s.instrument);
+  }
+  if(!ind.length) return {niveau:"non",doublures,manquants:["aucun slot défini"]};
+  return {niveau: manquants.length ? "non" : (origine ? "origine" : "doublure"), doublures, manquants};
+}
+// Qui pourrait couvrir un slot (suggestion de doublure / invitation)
+function candidats(projet, instrument){
+  return S.membres.filter(m=>saitJouer(m.id,projet.chanson_id,instrument)
+    || S.competences.some(k=>k.membre_id===m.id && !k.chanson_id && k.instrument===instrument));
+}
+
+/* ============================================================
+   RENDU — routage par hash, une fonction de vue par écran
+   ============================================================ */
+const $app = document.getElementById("app");
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dateFr = d => new Date(d).toLocaleDateString("fr-BE",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+const optInstruments = sel => INSTRUMENTS.map(i=>`<option ${i===sel?"selected":""}>${i}</option>`).join("");
+
+function route(){
+  if(!MODE_DEMO && !USER){ vueConnexion(); return; }
+  const h = location.hash || "#/moi";
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("actif", h.startsWith(a.getAttribute("href"))));
+  const [,vue,id] = h.split("/");
+  ({moi:vueMoi, repertoire:vueRepertoire, projets:vueProjets, projet:()=>vueProjet(id),
+    evenements:vueEvenements, evenement:()=>vueEvenement(id), membres:vueMembres}[vue]||vueMoi)();
+}
+function rafraichir(){ renderUserZone(); route(); }
+
+function renderUserZone(){
+  const z = document.getElementById("zone-user");
+  if(MODE_DEMO){
+    z.innerHTML = `Connecté : <select onchange="changerUser(this.value)">` +
+      S.membres.map(m=>`<option value="${m.id}" ${m.id===USER.id?"selected":""}>${esc(m.pseudo)}</option>`).join("") + `</select>`;
+  } else if(USER){
+    z.innerHTML = `${esc(USER.pseudo)} <button class="mini" onclick="SupaAPI.deconnexion()">déconnexion</button>`;
+  } else z.innerHTML = "";
+}
+async function changerUser(id){ await DemoAPI.setUser(id); rafraichir(); }
+
+function vueConnexion(){
+  $app.innerHTML = `<div class="carte" style="max-width:420px;margin:60px auto;text-align:center">
+    <h2>Connexion</h2>
+    <p class="mut">Recevez un lien magique par email — pas de mot de passe.</p>
+    <form class="bloc" style="justify-content:center" onsubmit="event.preventDefault();SupaAPI.connexion(document.getElementById('in-email').value)">
+      <input id="in-email" type="email" required placeholder="votre@email.be">
+      <button class="prim">Recevoir le lien</button>
+    </form></div>`;
+}
+
+/* ---------- Ma page ---------- */
+function vueMoi(){
+  const invitations = S.slots.filter(s=>s.membre_id===USER.id && s.invitation==="en_attente");
+  const mesSlots = S.slots.filter(s=>s.membre_id===USER.id && s.invitation==="accepte");
+  const mesComp = S.competences.filter(k=>k.membre_id===USER.id);
+  const generales = mesComp.filter(k=>!k.chanson_id), triplets = mesComp.filter(k=>k.chanson_id);
+  const repets = S.repetitions.filter(r=>mesSlots.some(s=>s.projet_id===r.projet_id) && new Date(r.date)>new Date())
+    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  $app.innerHTML = `<h2>Ma page — ${esc(USER.pseudo)}</h2>
+
+  ${invitations.length?`<div class="carte" style="border-color:var(--acc)"><h3>Invitations en attente</h3>`+
+    invitations.map(s=>{const p=parId("projets",s.projet_id),c=chanson(p.chanson_id);
+      return `<div class="ligne"><b>${esc(c.titre)}</b><span class="chip">${s.instrument}</span>
+        <span class="esp"></span>
+        <button class="mini prim" onclick="repondreInvitation('${s.id}','accepte')">Accepter</button>
+        <button class="mini" onclick="repondreInvitation('${s.id}','refuse')">Refuser</button></div>`;}).join("")+`</div>`:""}
+
+  <div class="carte"><h3>Mes badges</h3>
+    ${badges(USER.id).map(b=>`<span class="chip acc">${b}</span>`).join("")||'<span class="vide">aucun badge — déclarez une compétence ci-dessous</span>'}
+    <form class="bloc" onsubmit="event.preventDefault();ajouterCompetence(null)">
+      <select id="in-badge-instr">${optInstruments()}</select>
+      <select id="in-badge-statut">${STATUTS_COMP.map(s=>`<option value="${s}">${LIB_STATUT[s]}</option>`).join("")}</select>
+      <button class="mini">+ badge général</button></form></div>
+
+  <div class="carte"><h3>Mes morceaux acquis <span class="mut">(alimente la playlist potentielle)</span></h3>
+    <table><tr><th>Chanson</th><th>Instrument</th><th>Statut</th><th></th></tr>
+    ${triplets.map(k=>{const c=chanson(k.chanson_id);
+      return `<tr><td>${esc(c?c.titre:"?")}</td><td>${k.instrument}</td>
+      <td><select onchange="majCompetence('${k.id}',this.value)">${STATUTS_COMP.map(s=>`<option value="${s}" ${s===k.statut?"selected":""}>${LIB_STATUT[s]}</option>`).join("")}</select></td>
+      <td><button class="mini" onclick="supprimerCompetence('${k.id}')">✕</button></td></tr>`;}).join("")}
+    </table>
+    <form class="bloc" onsubmit="event.preventDefault();ajouterCompetence(document.getElementById('in-tri-chanson').value)">
+      <select id="in-tri-chanson">${S.chansons.map(c=>`<option value="${c.id}">${esc(c.titre)}</option>`).join("")}</select>
+      <select id="in-badge-instr2">${optInstruments()}</select>
+      <select id="in-badge-statut2">${STATUTS_COMP.map(s=>`<option value="${s}">${LIB_STATUT[s]}</option>`).join("")}</select>
+      <button class="mini">+ morceau acquis</button></form></div>
+
+  <div class="carte"><h3>Mes projets</h3>
+    ${mesSlots.map(s=>{const p=parId("projets",s.projet_id),c=chanson(p.chanson_id),pc=completude(p);
+      return `<div class="ligne carte clic" onclick="location.hash='#/projet/${p.id}'" style="margin:6px 0">
+        <b>${esc(c.titre)}</b><span class="chip">${s.instrument}</span>
+        <span class="pill">${statutDerive(p)}</span>
+        <div class="jauge"><div style="width:${pc}%"></div></div><span class="mut">${pc}%</span></div>`;}).join("")||'<span class="vide">aucun projet — voyez le répertoire</span>'}</div>
+
+  <div class="carte"><h3>Mes prochaines répétitions</h3>
+    ${repets.map(r=>{const p=parId("projets",r.projet_id),c=chanson(p.chanson_id);
+      return `<div class="ligne">${dateFr(r.date)} — <b>${esc(c.titre)}</b> <span class="mut">${esc(r.lieu||"")}</span></div>`;}).join("")||'<span class="vide">rien de prévu</span>'}</div>`;
+}
+
+/* ---------- Répertoire ---------- */
+function vueRepertoire(){
+  $app.innerHTML = `<h2>Répertoire</h2>
+  <div class="carte"><h3>Ajouter une chanson</h3>
+    <form class="bloc" onsubmit="event.preventDefault();ajouterChanson()">
+      <input id="in-ch-titre" placeholder="Titre *" required>
+      <input id="in-ch-artiste" placeholder="Artiste">
+      <input id="in-ch-ton" placeholder="Tonalité" style="width:80px">
+      <input id="in-ch-tempo" type="number" placeholder="BPM" style="width:80px">
+      <input id="in-ch-lien" placeholder="Lien YouTube/Spotify" style="flex:1;min-width:160px">
+      <button class="prim mini">Ajouter</button></form></div>
+  ${S.chansons.map(c=>{
+    const sachants = S.competences.filter(k=>k.chanson_id===c.id && ORDRE_STATUT[k.statut]>=1);
+    return `<div class="carte"><div class="ligne"><b>${esc(c.titre)}</b><span class="mut">${esc(c.artiste||"")}</span>
+      ${c.tonalite?`<span class="chip">${esc(c.tonalite)}</span>`:""}${c.tempo?`<span class="chip">${c.tempo} bpm</span>`:""}
+      ${c.lien?`<a href="${esc(c.lien)}" target="_blank">écouter</a>`:""}
+      <span class="esp"></span><button class="mini prim" onclick="creerProjet('${c.id}')">Monter un projet</button></div>
+      <div class="mut">Sait jouer : ${sachants.map(k=>`${esc(pseudo(k.membre_id))} (${k.instrument})`).join(", ")||"personne encore"}</div></div>`;
+  }).join("")}`;
+}
+
+/* ---------- Projets ---------- */
+function vueProjets(){
+  $app.innerHTML = `<h2>Projets</h2>` + (S.projets.map(p=>{
+    const c=chanson(p.chanson_id), pc=completude(p);
+    return `<div class="carte clic" onclick="location.hash='#/projet/${p.id}'"><div class="ligne">
+      <b>${esc(c.titre)}</b><span class="mut">${esc(c.artiste||"")}</span>
+      <span class="pill">${statutDerive(p)}</span>
+      <div class="jauge"><div style="width:${pc}%"></div></div><span class="mut">${pc}%</span></div></div>`;
+  }).join("")||'<p class="vide">Aucun projet. Montez-en un depuis le répertoire.</p>');
+}
+
+function vueProjet(id){
+  const p = parId("projets",id); if(!p){ $app.innerHTML="<p>Projet introuvable.</p>"; return; }
+  const c = chanson(p.chanson_id);
+  const slots = S.slots.filter(s=>s.projet_id===id);
+  const repets = S.repetitions.filter(r=>r.projet_id===id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const pc = completude(p);
+  const estCreateur = p.cree_par===USER.id;
+
+  $app.innerHTML = `<h2>${esc(c.titre)} <span class="mut">${esc(c.artiste||"")}</span></h2>
+  <div class="ligne" style="margin-bottom:10px">
+    ${c.tonalite?`<span class="chip">${esc(c.tonalite)}</span>`:""}${c.tempo?`<span class="chip">${c.tempo} bpm</span>`:""}
+    <span class="pill">${statutDerive(p)}</span>
+    <div class="jauge"><div style="width:${pc}%"></div></div><span>${pc}%</span></div>
+
+  <div class="carte"><h3>Slots (besoins instrumentaux)</h3>
+    <table><tr><th>Instrument</th><th>Besoin</th><th>Titulaire</th><th>Dernière répète</th><th></th></tr>
+    ${slots.map(s=>{
+      const v = dernierVerdict(s.id);
+      const cands = candidats(p, s.instrument).filter(m=>m.id!==s.membre_id);
+      return `<tr><td>${s.instrument}</td><td>${LIB_BESOIN[s.besoin]}</td>
+        <td>${s.membre_id ? esc(pseudo(s.membre_id))+(s.invitation==="en_attente"?' <span class="chip orange">invité</span>':s.invitation==="refuse"?' <span class="chip rouge">refusé</span>':"")
+          : `<select id="cand-${s.id}"><option value="">— inviter —</option>${cands.map(m=>`<option value="${m.id}">${esc(m.pseudo)}</option>`).join("")}</select>
+             <button class="mini" onclick="inviter('${s.id}')">Inviter</button>`}</td>
+        <td>${v? (v==="ca_tient"?'<span class="chip vert">ça tient</span>':'<span class="chip orange">à retravailler</span>') : '<span class="mut">—</span>'}</td>
+        <td>${estCreateur?`<button class="mini" onclick="supprimerSlot('${s.id}')">✕</button>`:""}</td></tr>`;
+    }).join("")}</table>
+    <form class="bloc" onsubmit="event.preventDefault();ajouterSlot('${id}')">
+      <select id="in-slot-instr">${optInstruments()}</select>
+      <select id="in-slot-besoin"><option value="indispensable">indispensable</option><option value="souhaitable">souhaitable</option><option value="bonus">bonus</option></select>
+      <button class="mini">+ slot</button></form></div>
+
+  <div class="carte"><h3>Partitions</h3>
+    ${slots.map(s=>{
+      const parts = S.partitions.filter(pt=>pt.projet_id===id && pt.instrument===s.instrument).sort((a,b)=>b.version-a.version);
+      return `<div class="ligne"><span class="chip">${s.instrument}</span>
+        ${parts.length? `${esc(parts[0].fichier.split("/").pop())} <span class="mut">v${parts[0].version}</span>
+          <button class="mini" onclick="telechargerPartition('${parts[0].id}')">ouvrir</button>` : '<span class="vide">aucune partition</span>'}
+        <span class="esp"></span>
+        <input type="file" accept="application/pdf" id="up-${s.id}" hidden onchange="uploaderPartition('${id}','${s.instrument}',this)">
+        <button class="mini" onclick="document.getElementById('up-${s.id}').click()">déposer PDF</button></div>`;
+    }).join("")}</div>
+
+  <div class="carte"><h3>Répétitions</h3>
+    ${repets.map(r=>{
+      const monSlot = slots.find(s=>s.membre_id===USER.id && s.invitation==="accepte");
+      const dejaConfirme = monSlot && S.confirmations.some(cf=>cf.repetition_id===r.id && cf.slot_id===monSlot.id);
+      return `<div class="ligne">${dateFr(r.date)} <span class="mut">${esc(r.lieu||"")}</span><span class="esp"></span>
+        ${monSlot && !dejaConfirme && new Date(r.date)<=new Date() ?
+          `<span class="mut">Mon verdict (${monSlot.instrument}) :</span>
+           <button class="mini prim" onclick="confirmerRepet('${r.id}','${monSlot.id}','ca_tient')">ça tient</button>
+           <button class="mini" onclick="confirmerRepet('${r.id}','${monSlot.id}','a_retravailler')">à retravailler</button>`
+        : dejaConfirme ? '<span class="chip vert">verdict donné</span>' : ""}
+        </div>`;
+    }).join("")||'<span class="vide">aucune répétition planifiée</span>'}
+    <form class="bloc" onsubmit="event.preventDefault();ajouterRepetition('${id}')">
+      <input id="in-rep-date" type="datetime-local" required>
+      <input id="in-rep-lieu" placeholder="Lieu">
+      <button class="mini">+ répétition</button></form>
+    <p class="mut">La complétude monte quand chaque slot indispensable a confirmé « ça tient » après répétition.</p></div>`;
+}
+
+/* ---------- Événements ---------- */
+function vueEvenements(){
+  $app.innerHTML = `<h2>Événements</h2>
+  <div class="carte"><form class="bloc" onsubmit="event.preventDefault();creerEvenement()">
+    <input id="in-ev-nom" placeholder="Nom *" required>
+    <input id="in-ev-date" type="datetime-local" required>
+    <input id="in-ev-lieu" placeholder="Lieu">
+    <button class="prim mini">Créer</button></form></div>` +
+  S.evenements.sort((a,b)=>new Date(a.date)-new Date(b.date)).map(e=>{
+    const n = presents(e.id).length;
+    return `<div class="carte clic" onclick="location.hash='#/evenement/${e.id}'"><div class="ligne">
+      <b>${esc(e.nom)}</b><span class="mut">${dateFr(e.date)} · ${esc(e.lieu||"")}</span>
+      <span class="esp"></span><span class="chip">${n} confirmé${n>1?"s":""}</span></div></div>`;
+  }).join("");
+}
+
+function vueEvenement(id){
+  const e = parId("evenements",id); if(!e){ $app.innerHTML="<p>Événement introuvable.</p>"; return; }
+  const estOrga = e.cree_par===USER.id;
+  const maPart = S.participations.find(p=>p.evenement_id===id && p.membre_id===USER.id);
+  const la = presents(id);
+  const items = S.playlist_items.filter(i=>i.evenement_id===id);
+  const jouables = S.projets.map(p=>({p, j:jouabilite(id,p), pc:completude(p)}))
+    .sort((a,b)=>({origine:0,doublure:1,non:2}[a.j.niveau]-{origine:0,doublure:1,non:2}[b.j.niveau]));
+
+  $app.innerHTML = `<h2>${esc(e.nom)}</h2>
+  <p class="mut">${dateFr(e.date)} · ${esc(e.lieu||"")} · organisé par ${esc(pseudo(e.cree_par))}</p>
+
+  <div class="carte"><h3>Participants confirmés</h3>
+    ${la.map(mid=>`<span class="chip">${esc(pseudo(mid))} <span class="mut">${badges(mid).join(", ")}</span></span>`).join("")||'<span class="vide">personne encore</span>'}
+    <div class="ligne" style="margin-top:8px">
+      <button class="mini ${maPart&&maPart.statut==='confirme'?'prim':''}" onclick="majParticipation('${id}','confirme')">J'y serai</button>
+      <button class="mini" onclick="majParticipation('${id}','absent')">Absent</button></div></div>
+
+  <div class="carte"><h3>Playlist potentielle <span class="mut">(calculée d'après les présents)</span></h3>
+    <table><tr><th></th><th>Chanson</th><th>Complétude</th><th>Jouabilité</th><th>Détail</th></tr>
+    ${jouables.map(({p,j,pc})=>{
+      const c=chanson(p.chanson_id);
+      const item=items.find(i=>i.projet_id===p.id);
+      const ok = j.niveau!=="non" && pc===100;
+      const teinte = j.niveau==="origine"?"vert":j.niveau==="doublure"?"orange":"rouge";
+      const lib = j.niveau==="origine"?"équipe d'origine":j.niveau==="doublure"?"avec doublure":"non jouable";
+      return `<tr><td><input type="checkbox" ${item&&item.coche?"checked":""} ${estOrga&&ok?"":"disabled"}
+          onchange="cocherPlaylist('${id}','${p.id}',this.checked)"></td>
+        <td><a href="#/projet/${p.id}">${esc(c.titre)}</a></td>
+        <td>${pc}%</td><td><span class="chip ${teinte}">${lib}</span></td>
+        <td class="mut">${j.doublures.map(d=>`${d.instrument} → ${esc(pseudo(d.membre_id))}`).join(", ")}
+            ${j.manquants.length?`manque : ${j.manquants.join(", ")}`:""}</td></tr>`;
+    }).join("")}</table>
+    ${estOrga?"":'<p class="mut">Seul l\'organisateur coche la playlist finale.</p>'}</div>
+
+  <div class="carte"><h3>Cahiers de jam</h3>
+    <p class="mut">PDF par participant : page de garde + ses partitions dans l'ordre de la setlist cochée.</p>
+    <div class="ligne">${la.map(mid=>`<button class="mini" onclick="genererCahier('${id}','${mid}')">📖 ${esc(pseudo(mid))}</button>`).join("")}</div></div>`;
+}
+
+/* ---------- Membres ---------- */
+function vueMembres(){
+  $app.innerHTML = `<h2>Membres</h2>` + S.membres.map(m=>{
+    const triplets = S.competences.filter(k=>k.membre_id===m.id && k.chanson_id);
+    return `<div class="carte"><div class="ligne"><b>${esc(m.pseudo)}</b>
+      ${badges(m.id).map(b=>`<span class="chip acc">${b}</span>`).join("")}</div>
+      <div class="mut">${triplets.map(k=>{const c=chanson(k.chanson_id);return `${esc(c?c.titre:"?")} (${k.instrument}, ${LIB_STATUT[k.statut]})`;}).join(" · ")||"aucun morceau acquis déclaré"}</div></div>`;
+  }).join("");
+}
+
+/* ============================================================
+   ACTIONS (mutations puis re-rendu)
+   ============================================================ */
+const val = id => document.getElementById(id).value.trim();
+
+async function ajouterCompetence(chansonId){
+  const suffixe = chansonId ? "2" : "";
+  await API.insert("competences",{membre_id:USER.id, chanson_id:chansonId||null,
+    instrument:val("in-badge-instr"+suffixe), statut:val("in-badge-statut"+suffixe)});
+  rafraichir();
+}
+async function majCompetence(id,statut){ await API.update("competences",id,{statut}); rafraichir(); }
+async function supprimerCompetence(id){ await API.remove("competences",id); rafraichir(); }
+
+async function ajouterChanson(){
+  await API.insert("chansons",{titre:val("in-ch-titre"),artiste:val("in-ch-artiste"),
+    tonalite:val("in-ch-ton"),tempo:parseInt(val("in-ch-tempo"))||null,lien:val("in-ch-lien"),
+    cree_par:USER.id,cree_le:new Date().toISOString()});
+  rafraichir();
+}
+async function creerProjet(chansonId){
+  const p = await API.insert("projets",{chanson_id:chansonId,statut:"brouillon",cree_par:USER.id,cree_le:new Date().toISOString()});
+  location.hash = "#/projet/"+p.id;
+}
+async function ajouterSlot(projetId){
+  await API.insert("slots",{projet_id:projetId,instrument:val("in-slot-instr"),besoin:val("in-slot-besoin"),membre_id:null,invitation:null});
+  rafraichir();
+}
+async function supprimerSlot(id){ await API.remove("slots",id); rafraichir(); }
+async function inviter(slotId){
+  const mid = document.getElementById("cand-"+slotId).value;
+  if(!mid) return;
+  await API.update("slots",slotId,{membre_id:mid,invitation:"en_attente"});
+  rafraichir();
+}
+async function repondreInvitation(slotId,reponse){
+  const patch = reponse==="accepte" ? {invitation:"accepte"} : {invitation:null,membre_id:null};
+  await API.update("slots",slotId,patch);
+  rafraichir();
+}
+async function ajouterRepetition(projetId){
+  await API.insert("repetitions",{projet_id:projetId,date:new Date(val("in-rep-date")).toISOString(),lieu:val("in-rep-lieu"),notes:""});
+  rafraichir();
+}
+async function confirmerRepet(repetitionId,slotId,verdict){
+  await API.insert("confirmations",{repetition_id:repetitionId,slot_id:slotId,verdict,date:new Date().toISOString()});
+  // « ça tient » fait aussi progresser le triplet du membre vers « jouable »
+  if(verdict==="ca_tient"){
+    const s=parId("slots",slotId), p=parId("projets",s.projet_id);
+    const k=S.competences.find(k=>k.membre_id===s.membre_id && k.chanson_id===p.chanson_id && k.instrument===s.instrument);
+    if(!k) await API.insert("competences",{membre_id:s.membre_id,chanson_id:p.chanson_id,instrument:s.instrument,statut:"jouable"});
+    else if(k.statut==="apprentissage") await API.update("competences",k.id,{statut:"jouable"});
+  }
+  rafraichir();
+}
+async function uploaderPartition(projetId,instrument,input){
+  if(!input.files.length) return;
+  await API.uploadPartition(projetId,instrument,input.files[0]);
+  rafraichir();
+}
+async function telechargerPartition(id){
+  const part = parId("partitions",id);
+  const data = await API.dataPartition(part);
+  if(!data){ alert("Fichier indisponible."); return; }
+  const blob = typeof data==="string" ? await (await fetch(data)).blob() : new Blob([data],{type:"application/pdf"});
+  window.open(URL.createObjectURL(blob),"_blank");
+}
+async function creerEvenement(){
+  const e = await API.insert("evenements",{nom:val("in-ev-nom"),date:new Date(val("in-ev-date")).toISOString(),
+    lieu:val("in-ev-lieu"),cree_par:USER.id,cree_le:new Date().toISOString()});
+  location.hash = "#/evenement/"+e.id;
+}
+async function majParticipation(evtId,statut){
+  const existante = S.participations.find(p=>p.evenement_id===evtId && p.membre_id===USER.id);
+  if(existante) await API.update("participations",existante.id,{statut});
+  else await API.insert("participations",{evenement_id:evtId,membre_id:USER.id,statut});
+  rafraichir();
+}
+async function cocherPlaylist(evtId,projetId,coche){
+  const existant = S.playlist_items.find(i=>i.evenement_id===evtId && i.projet_id===projetId);
+  if(existant) await API.update("playlist_items",existant.id,{coche});
+  else await API.insert("playlist_items",{evenement_id:evtId,projet_id:projetId,coche,
+    ordre:S.playlist_items.filter(i=>i.evenement_id===evtId).length});
+  rafraichir();
+}
+
+/* ============================================================
+   CAHIER DE JAM — un PDF par participant (pdf-lib)
+   Page de garde (setlist annotée) + partitions du membre
+   dans l'ordre de la setlist cochée.
+   ============================================================ */
+function instrumentPour(evtId, projet, mid){
+  const slot = S.slots.filter(s=>s.projet_id===projet.id && s.membre_id===mid && s.invitation==="accepte")[0];
+  if(slot) return slot.instrument;
+  const d = jouabilite(evtId,projet).doublures.find(d=>d.membre_id===mid);
+  return d ? d.instrument : null;
+}
+
+async function genererCahier(evtId, mid){
+  const evt = parId("evenements",evtId);
+  const setlist = S.playlist_items.filter(i=>i.evenement_id===evtId && i.coche)
+    .sort((a,b)=>a.ordre-b.ordre).map(i=>parId("projets",i.projet_id)).filter(Boolean);
+  if(!setlist.length){ alert("Aucun morceau coché dans la playlist."); return; }
+
+  const {PDFDocument, StandardFonts, rgb} = PDFLib;
+  const doc = await PDFDocument.create();
+  const gras = await doc.embedFont(StandardFonts.HelveticaBold);
+  const normal = await doc.embedFont(StandardFonts.Helvetica);
+
+  // --- Page de garde ---
+  const page = doc.addPage([595,842]); // A4
+  let y = 770;
+  page.drawText("Cahier de jam", {x:60,y,size:28,font:gras,color:rgb(0.94,0.66,0.2)}); y-=34;
+  page.drawText(pseudo(mid), {x:60,y,size:20,font:gras}); y-=26;
+  page.drawText(`${evt.nom} — ${new Date(evt.date).toLocaleDateString("fr-BE")} — ${evt.lieu||""}`,
+    {x:60,y,size:12,font:normal,color:rgb(.45,.45,.5)}); y-=40;
+  page.drawText("Setlist", {x:60,y,size:14,font:gras}); y-=22;
+  setlist.forEach((p,i)=>{
+    const c = chanson(p.chanson_id);
+    const instr = instrumentPour(evtId,p,mid);
+    const infos = [c.tonalite, c.tempo?c.tempo+" bpm":null].filter(Boolean).join(" · ");
+    page.drawText(`${i+1}. ${c.titre}${c.artiste?" — "+c.artiste:""}`, {x:70,y,size:12,font:gras}); y-=15;
+    page.drawText(`    ${infos}${infos&&instr?"  ·  ":""}${instr?("vous : "+instr):"(vous ne jouez pas sur ce morceau)"}`,
+      {x:70,y,size:10,font:normal,color:rgb(.45,.45,.5)}); y-=20;
+  });
+  page.drawText("Généré par Jam Maker +", {x:60,y:50,size:9,font:normal,color:rgb(.6,.6,.65)});
+
+  // --- Partitions du membre, dans l'ordre ---
+  let manquantes = [];
+  for(const p of setlist){
+    const instr = instrumentPour(evtId,p,mid);
+    if(!instr) continue;
+    const parts = S.partitions.filter(pt=>pt.projet_id===p.id && pt.instrument===instr).sort((a,b)=>b.version-a.version);
+    if(!parts.length){ manquantes.push(chanson(p.chanson_id).titre+" ("+instr+")"); continue; }
+    const data = await API.dataPartition(parts[0]);
+    if(!data){ manquantes.push(chanson(p.chanson_id).titre+" ("+instr+")"); continue; }
+    try{
+      const buf = typeof data==="string" ? await (await fetch(data)).arrayBuffer() : data;
+      const src = await PDFDocument.load(buf);
+      const pages = await doc.copyPages(src, src.getPageIndices());
+      pages.forEach(pg=>doc.addPage(pg));
+    }catch(err){ manquantes.push(chanson(p.chanson_id).titre+" (PDF illisible)"); }
+  }
+  if(manquantes.length){
+    const pg = doc.addPage([595,842]);
+    pg.drawText("Partitions manquantes :", {x:60,y:770,size:14,font:gras});
+    manquantes.forEach((m,i)=>pg.drawText("• "+m, {x:70,y:740-18*i,size:11,font:normal}));
+  }
+
+  const bytes = await doc.save();
+  const blob = new Blob([bytes],{type:"application/pdf"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `cahier_${pseudo(mid)}_${evt.nom.replace(/\W+/g,"-")}.pdf`;
+  a.click();
+}
+
+/* ============================================================
+   DÉMARRAGE
+   ============================================================ */
+async function boot(){
+  document.getElementById("bandeau").hidden = !MODE_DEMO;
+  if(!MODE_DEMO) await SupaAPI.init();
+  await API.load();
+  renderUserZone();
+  route();
+  if(!MODE_DEMO){
+    SupaAPI.sb.auth.onAuthStateChange(async (evt)=>{ if(evt==="SIGNED_IN"){ await API.load(); rafraichir(); } });
+  }
+}
+window.addEventListener("hashchange", route);
+boot();
+</script>
+</body>
+</html>
