@@ -46,6 +46,35 @@
   .bandeau-demo{background:#3a3220;color:var(--acc);font-size:.82rem;padding:6px 18px;text-align:center}
   a{color:var(--acc2)}
   .vide{color:var(--mut);font-style:italic;font-size:.9rem}
+  /* Badges d'instruments */
+  .badge{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 11px 3px 4px;font-size:.82rem;margin:2px;vertical-align:middle}
+  .badge .ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;flex:none}
+  .badge.gros{font-size:.95rem;padding:5px 14px 5px 6px}
+  .badge.gros .ico{width:28px;height:28px}
+  /* Conseils contextualisés */
+  .conseil{display:flex;align-items:center;gap:10px;background:#232e1e;border:1px solid #46603a;border-radius:10px;padding:8px 12px;margin:6px 0;font-size:.9rem;flex-wrap:wrap}
+  .conseil .amp{font-size:1.05rem}
+  /* Mode guidé */
+  .guide{max-width:580px;margin:0 auto;text-align:center}
+  .guide h2{font-size:1.45rem}
+  .guide p{font-size:1.02rem}
+  .guide .etapes{display:flex;justify-content:center;gap:8px;margin:14px 0}
+  .guide .etapes span{width:10px;height:10px;border-radius:50%;background:var(--panel2);border:1px solid var(--line)}
+  .guide .etapes span.fait{background:var(--acc);border-color:var(--acc)}
+  .gbtn{display:block;width:100%;text-align:left;font-size:1.05rem;padding:14px 18px;margin:10px 0;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+  .gbtn:hover{border-color:var(--acc)}
+  .gbtn small{display:block;color:var(--mut);font-size:.85rem;margin-top:2px;font-weight:400}
+  .choix-instr{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+  .choix-instr button{border-radius:999px;display:inline-flex;align-items:center;gap:6px;font-size:.95rem;padding:8px 14px}
+  .choix-instr button.on{border-color:var(--acc);background:#3a3220;color:var(--acc)}
+  /* Dépôt de partitions */
+  .dropzone{border:2px dashed var(--line);border-radius:14px;padding:34px 20px;text-align:center;color:var(--mut);cursor:pointer;font-size:1.02rem;transition:border-color .2s}
+  .dropzone.survol,.dropzone:hover{border-color:var(--acc);color:var(--txt)}
+  /* Aide */
+  .aide details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0}
+  .aide summary{cursor:pointer;font-weight:600;font-size:1rem}
+  .aide details p,.aide details ol,.aide details ul{font-size:.95rem}
+  .aide li{margin:6px 0}
 </style>
 </head>
 <body>
@@ -62,6 +91,9 @@
     <a href="#/projets">Projets</a>
     <a href="#/evenements">Événements</a>
     <a href="#/membres">Membres</a>
+    <a href="#/partitions">Partitions</a>
+    <a href="#/guide" style="color:var(--acc)">&#10024; Guidé</a>
+    <a href="#/aide">Aide&nbsp;?</a>
   </nav>
   <div id="zone-user"></div>
 </header>
@@ -89,6 +121,34 @@ const ORDRE_STATUT = {apprentissage:0, jouable:1, maitrise:2};
 const LIB_STATUT = {apprentissage:"en apprentissage", jouable:"jouable", maitrise:"maîtrisé"};
 const LIB_BESOIN = {indispensable:"indispensable", souhaitable:"souhaitable", bonus:"bonus"};
 
+/* ---------- Icônes & badges d'instruments ---------- */
+const ICONES = {
+  chant:["M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z","M19 10v1a7 7 0 0 1-14 0v-1","M12 18v4","M8 22h8"],
+  guitare:["M12 12 21 3","M17.5 3.5 20.5 6.5","M12.8 11.2a5.2 5.2 0 1 0-7.3 7.3 5.2 5.2 0 0 0 7.3-7.3z","M8.5 15.5h.01"],
+  basse:["M9.5 14.5 21 3","M18 3.5 20.5 6","M9.8 14.2a4 4 0 1 0-6 6 4 4 0 0 0 6-6z","M6.5 17.5h.01"],
+  batterie:["M4 9c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z","M4 9v7c0 1.7 3.6 3 8 3s8-1.3 8-3V9","M8 2l3 4","M16 2l-3 4"],
+  clavier:["M3 7h18v10H3z","M7.5 7v6","M12 7v6","M16.5 7v6"],
+  cuivres:["M3 9v7","M3 12h8","M11 8v9c3.5-1 7-2 10-2V9c-3 0-6.5 0-10-1z","M6 12V9.5","M8.5 12V9.5"],
+  violon:["M12 10V3","M10 3h4","M12 21c-2.8 0-5-2.2-5-5.2S9.2 10 12 10s5 2.8 5 5.8-2.2 5.2-5 5.2z","M10.5 14v4","M13.5 14v4"],
+  percussions:["M3 10h8v6.5c0 1.2-1.8 2.2-4 2.2s-4-1-4-2.2z","M13 12h8v4.5c0 1.2-1.8 2.2-4 2.2s-4-1-4-2.2z","M3 10c0 1 1.8 1.8 4 1.8s4-.8 4-1.8","M13 12c0 .9 1.8 1.6 4 1.6s4-.7 4-1.6"],
+  harmonica:["M3 9h18v6H3z","M6 12h.01","M9.5 12h.01","M13 12h.01","M16.5 12h.01"],
+  autre:["M9 18V5l11-2v13","M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z","M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"]
+};
+const TEINTES = {chant:"#e07090",guitare:"#f0a832",basse:"#c88a3c",batterie:"#e06060",clavier:"#6aa0e0",
+  cuivres:"#e8c84a",violon:"#a888e8",percussions:"#d0785a",harmonica:"#5ec8c8",autre:"#9a9ab0"};
+const ARTICLE = {chant:"du chant",guitare:"de la guitare",basse:"de la basse",batterie:"de la batterie",
+  clavier:"du clavier",cuivres:"des cuivres",violon:"du violon",percussions:"des percussions",
+  harmonica:"de l'harmonica",autre:"d'un autre instrument"};
+
+function icone(instr,taille=15){
+  const traits = ICONES[instr]||ICONES.autre;
+  return `<svg viewBox="0 0 24 24" width="${taille}" height="${taille}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${traits.map(d=>`<path d="${d}"/>`).join("")}</svg>`;
+}
+function badgeInstr(instr, opts={}){
+  const t = TEINTES[instr]||TEINTES.autre;
+  return `<span class="badge${opts.gros?" gros":""}" style="border-color:${t}66"><span class="ico" style="background:${t}26;color:${t}">${icone(instr,opts.gros?17:14)}</span>${instr}${opts.texte||""}</span>`;
+}
+
 /* ---------- Données de démonstration ---------- */
 function donneesDemo(){
   const m1={id:"m1",pseudo:"Jean"}, m2={id:"m2",pseudo:"Sophie"}, m3={id:"m3",pseudo:"Marc"}, m4={id:"m4",pseudo:"Léa"};
@@ -113,7 +173,8 @@ function donneesDemo(){
       {id:"s1",projet_id:"p1",instrument:"guitare",besoin:"indispensable",membre_id:"m1",invitation:"accepte"},
       {id:"s2",projet_id:"p1",instrument:"chant",besoin:"indispensable",membre_id:"m2",invitation:"accepte"},
       {id:"s3",projet_id:"p1",instrument:"basse",besoin:"indispensable",membre_id:"m3",invitation:"en_attente"},
-      {id:"s4",projet_id:"p1",instrument:"cuivres",besoin:"bonus",membre_id:null,invitation:null}
+      {id:"s4",projet_id:"p1",instrument:"cuivres",besoin:"bonus",membre_id:null,invitation:null},
+      {id:"s5",projet_id:"p1",instrument:"batterie",besoin:"souhaitable",membre_id:null,invitation:null}
     ],
     partitions:[],
     repetitions:[{id:"r1",projet_id:"p1",date:new Date(Date.now()+7*864e5).toISOString(),lieu:"local répète",notes:""}],
@@ -131,7 +192,7 @@ function donneesDemo(){
    ============================================================ */
 let S = null;            // état courant (cache de toutes les tables)
 let USER = null;         // membre connecté {id, pseudo}
-const CLE_DEMO = "jammaker.demo.v1";
+const CLE_DEMO = "jammaker.demo.v2";
 const CLE_USER = "jammaker.demo.user";
 
 const DemoAPI = {
@@ -278,6 +339,53 @@ function candidats(projet, instrument){
     || S.competences.some(k=>k.membre_id===m.id && !k.chanson_id && k.instrument===instrument));
 }
 
+/* ---------- Conseils contextualisés ---------- */
+// Sur un projet : qui inviter pour les slots vacants ?
+function conseilsProjet(p){
+  const out = [];
+  for(const s of S.slots.filter(s=>s.projet_id===p.id && (!s.membre_id || s.invitation==="refuse"))){
+    for(const m of candidats(p, s.instrument)){
+      const connait = saitJouer(m.id, p.chanson_id, s.instrument);
+      out.push({slotId:s.id, membreId:m.id,
+        texte:`<b>${esc(m.pseudo)}</b> joue ${ARTICLE[s.instrument]||s.instrument}${connait?" et connaît déjà ce morceau":""} — ${connait?"la recrue idéale":"ce serait bien"} pour ce morceau.`});
+    }
+  }
+  return out;
+}
+// Sur ma page : quels projets cherchent mes instruments ?
+function conseilsPourMoi(){
+  const mesInstr = badges(USER.id);
+  const out = [];
+  for(const p of S.projets.filter(p=>p.statut!=="joue")){
+    if(S.slots.some(s=>s.projet_id===p.id && s.membre_id===USER.id && s.invitation!=="refuse")) continue;
+    for(const s of S.slots.filter(s=>s.projet_id===p.id && !s.membre_id && mesInstr.includes(s.instrument))){
+      const c = chanson(p.chanson_id);
+      out.push({projetId:p.id, texte:`Il manque quelqu'un ${ARTICLE[s.instrument]||s.instrument} sur « <b>${esc(c.titre)}</b> » — et tu joues ${ARTICLE[s.instrument]||s.instrument} !`});
+    }
+  }
+  return out;
+}
+// Sur un événement : quelle présence débloquerait un morceau ?
+function conseilsEvenement(evtId){
+  const la = presents(evtId), out = [], vus = new Set();
+  for(const p of S.projets){
+    const j = jouabilite(evtId, p);
+    if(j.niveau!=="non") continue;
+    const c = chanson(p.chanson_id);
+    for(const instr of j.manquants){
+      for(const m of S.membres.filter(m=>!la.includes(m.id) && saitJouer(m.id,p.chanson_id,instr))){
+        const cle = m.id+p.id;
+        if(vus.has(cle)) continue; vus.add(cle);
+        out.push({texte:`Si <b>${esc(m.pseudo)}</b> (${instr}) confirme sa présence, « <b>${esc(c.titre)}</b> » devient jouable.`});
+      }
+    }
+  }
+  return out;
+}
+const carteConseils = (liste, bouton) => liste.length ?
+  `<div class="carte"><h3>&#128161; Conseils</h3>` + liste.map(cn=>
+    `<div class="conseil"><span class="amp">&#128161;</span><span style="flex:1">${cn.texte}</span>${bouton?bouton(cn):""}</div>`).join("") + `</div>` : "";
+
 /* ============================================================
    RENDU — routage par hash, une fonction de vue par écran
    ============================================================ */
@@ -292,7 +400,8 @@ function route(){
   document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("actif", h.startsWith(a.getAttribute("href"))));
   const [,vue,id] = h.split("/");
   ({moi:vueMoi, repertoire:vueRepertoire, projets:vueProjets, projet:()=>vueProjet(id),
-    evenements:vueEvenements, evenement:()=>vueEvenement(id), membres:vueMembres}[vue]||vueMoi)();
+    evenements:vueEvenements, evenement:()=>vueEvenement(id), membres:vueMembres,
+    partitions:vuePartitions, guide:vueGuide, aide:vueAide}[vue]||vueMoi)();
 }
 function rafraichir(){ renderUserZone(); route(); }
 
@@ -330,13 +439,15 @@ function vueMoi(){
 
   ${invitations.length?`<div class="carte" style="border-color:var(--acc)"><h3>Invitations en attente</h3>`+
     invitations.map(s=>{const p=parId("projets",s.projet_id),c=chanson(p.chanson_id);
-      return `<div class="ligne"><b>${esc(c.titre)}</b><span class="chip">${s.instrument}</span>
+      return `<div class="ligne"><b>${esc(c.titre)}</b>${badgeInstr(s.instrument)}
         <span class="esp"></span>
         <button class="mini prim" onclick="repondreInvitation('${s.id}','accepte')">Accepter</button>
         <button class="mini" onclick="repondreInvitation('${s.id}','refuse')">Refuser</button></div>`;}).join("")+`</div>`:""}
 
+  ${carteConseils(conseilsPourMoi(), cn=>`<button class="mini prim" onclick="location.hash='#/projet/${cn.projetId}'">Voir</button>`)}
+
   <div class="carte"><h3>Mes badges</h3>
-    ${badges(USER.id).map(b=>`<span class="chip acc">${b}</span>`).join("")||'<span class="vide">aucun badge — déclarez une compétence ci-dessous</span>'}
+    ${badges(USER.id).map(b=>badgeInstr(b,{gros:true})).join("")||'<span class="vide">aucun badge — déclarez une compétence ci-dessous</span>'}
     <form class="bloc" onsubmit="event.preventDefault();ajouterCompetence(null)">
       <select id="in-badge-instr">${optInstruments()}</select>
       <select id="in-badge-statut">${STATUTS_COMP.map(s=>`<option value="${s}">${LIB_STATUT[s]}</option>`).join("")}</select>
@@ -358,7 +469,7 @@ function vueMoi(){
   <div class="carte"><h3>Mes projets</h3>
     ${mesSlots.map(s=>{const p=parId("projets",s.projet_id),c=chanson(p.chanson_id),pc=completude(p);
       return `<div class="ligne carte clic" onclick="location.hash='#/projet/${p.id}'" style="margin:6px 0">
-        <b>${esc(c.titre)}</b><span class="chip">${s.instrument}</span>
+        <b>${esc(c.titre)}</b>${badgeInstr(s.instrument)}
         <span class="pill">${statutDerive(p)}</span>
         <div class="jauge"><div style="width:${pc}%"></div></div><span class="mut">${pc}%</span></div>`;}).join("")||'<span class="vide">aucun projet — voyez le répertoire</span>'}</div>
 
@@ -418,7 +529,7 @@ function vueProjet(id){
     ${slots.map(s=>{
       const v = dernierVerdict(s.id);
       const cands = candidats(p, s.instrument).filter(m=>m.id!==s.membre_id);
-      return `<tr><td>${s.instrument}</td><td>${LIB_BESOIN[s.besoin]}</td>
+      return `<tr><td>${badgeInstr(s.instrument)}</td><td>${LIB_BESOIN[s.besoin]}</td>
         <td>${s.membre_id ? esc(pseudo(s.membre_id))+(s.invitation==="en_attente"?' <span class="chip orange">invité</span>':s.invitation==="refuse"?' <span class="chip rouge">refusé</span>':"")
           : `<select id="cand-${s.id}"><option value="">— inviter —</option>${cands.map(m=>`<option value="${m.id}">${esc(m.pseudo)}</option>`).join("")}</select>
              <button class="mini" onclick="inviter('${s.id}')">Inviter</button>`}</td>
@@ -430,10 +541,12 @@ function vueProjet(id){
       <select id="in-slot-besoin"><option value="indispensable">indispensable</option><option value="souhaitable">souhaitable</option><option value="bonus">bonus</option></select>
       <button class="mini">+ slot</button></form></div>
 
-  <div class="carte"><h3>Partitions</h3>
+  ${carteConseils(conseilsProjet(p), cn=>`<button class="mini prim" onclick="inviterDirect('${cn.slotId}','${cn.membreId}')">Inviter</button>`)}
+
+  <div class="carte"><h3>Partitions <span class="mut">(ou passez par l'onglet Partitions pour tout déposer d'un coup)</span></h3>
     ${slots.map(s=>{
       const parts = S.partitions.filter(pt=>pt.projet_id===id && pt.instrument===s.instrument).sort((a,b)=>b.version-a.version);
-      return `<div class="ligne"><span class="chip">${s.instrument}</span>
+      return `<div class="ligne">${badgeInstr(s.instrument)}
         ${parts.length? `${esc(parts[0].fichier.split("/").pop())} <span class="mut">v${parts[0].version}</span>
           <button class="mini" onclick="telechargerPartition('${parts[0].id}')">ouvrir</button>` : '<span class="vide">aucune partition</span>'}
         <span class="esp"></span>
@@ -489,7 +602,7 @@ function vueEvenement(id){
   <p class="mut">${dateFr(e.date)} · ${esc(e.lieu||"")} · organisé par ${esc(pseudo(e.cree_par))}</p>
 
   <div class="carte"><h3>Participants confirmés</h3>
-    ${la.map(mid=>`<span class="chip">${esc(pseudo(mid))} <span class="mut">${badges(mid).join(", ")}</span></span>`).join("")||'<span class="vide">personne encore</span>'}
+    ${la.map(mid=>`<div class="ligne" style="margin:4px 0"><b>${esc(pseudo(mid))}</b> ${badges(mid).map(b=>badgeInstr(b)).join("")}</div>`).join("")||'<span class="vide">personne encore</span>'}
     <div class="ligne" style="margin-top:8px">
       <button class="mini ${maPart&&maPart.statut==='confirme'?'prim':''}" onclick="majParticipation('${id}','confirme')">J'y serai</button>
       <button class="mini" onclick="majParticipation('${id}','absent')">Absent</button></div></div>
@@ -511,6 +624,8 @@ function vueEvenement(id){
     }).join("")}</table>
     ${estOrga?"":'<p class="mut">Seul l\'organisateur coche la playlist finale.</p>'}</div>
 
+  ${carteConseils(conseilsEvenement(id))}
+
   <div class="carte"><h3>Cahiers de jam</h3>
     <p class="mut">PDF par participant : page de garde + ses partitions dans l'ordre de la setlist cochée.</p>
     <div class="ligne">${la.map(mid=>`<button class="mini" onclick="genererCahier('${id}','${mid}')">📖 ${esc(pseudo(mid))}</button>`).join("")}</div></div>`;
@@ -521,9 +636,346 @@ function vueMembres(){
   $app.innerHTML = `<h2>Membres</h2>` + S.membres.map(m=>{
     const triplets = S.competences.filter(k=>k.membre_id===m.id && k.chanson_id);
     return `<div class="carte"><div class="ligne"><b>${esc(m.pseudo)}</b>
-      ${badges(m.id).map(b=>`<span class="chip acc">${b}</span>`).join("")}</div>
+      ${badges(m.id).map(b=>badgeInstr(b)).join("")}</div>
       <div class="mut">${triplets.map(k=>{const c=chanson(k.chanson_id);return `${esc(c?c.titre:"?")} (${k.instrument}, ${LIB_STATUT[k.statut]})`;}).join(" · ")||"aucun morceau acquis déclaré"}</div></div>`;
   }).join("");
+}
+
+/* ============================================================
+   MODE GUIDÉ — questionnaire pas à pas pour les non-initiés.
+   Qui es-tu → que sais-tu faire → que veux-tu → avec qui → quand.
+   Par défaut à la première visite (clé jammaker.guide.vu).
+   ============================================================ */
+let GUIDE = null;
+const CLE_GUIDE = "jammaker.guide.vu";
+
+function demarrerGuide(){
+  GUIDE = {etape:1, but:null, chansonId:"", titre:"", artiste:"",
+    instruments:new Set(badges(USER.id)), besoins:new Set(["chant","guitare","basse","batterie"]),
+    invites:{}, nom:"", date:"", lieu:"", fait:[], lienFin:"#/moi"};
+}
+function finGuide(){ localStorage.setItem(CLE_GUIDE,"1"); GUIDE=null; }
+
+function vueGuide(){
+  if(!GUIDE) demarrerGuide();
+  const g = GUIDE;
+  const dots = n=>`<div class="etapes">${[1,2,3,4,5].map(i=>`<span class="${i<=n?"fait":""}"></span>`).join("")}</div>`;
+  const nav = (retour,continuer)=>`<div class="ligne" style="justify-content:center;margin-top:16px">
+    ${retour?`<button onclick="guideVa(${retour})">&larr; Retour</button>`:""}
+    ${continuer?`<button class="prim" onclick="guideVa(${continuer})">Continuer &rarr;</button>`:""}</div>`;
+  let html = "";
+
+  if(g.etape===1){
+    html = dots(1)+`<h2>Bonjour ! Qui es-tu ?</h2>
+      <p>Pour l'instant, tu es <b>${esc(USER.pseudo)}</b>.</p>`
+      +(MODE_DEMO
+        ? `<p class="mut">Clique sur ton prénom, ou crée-toi :</p>
+           ${S.membres.map(m=>`<button class="gbtn" onclick="guideChoisirMembre('${m.id}')">${m.id===USER.id?"&#10004; ":""}${esc(m.pseudo)}</button>`).join("")}
+           <form class="bloc" style="justify-content:center" onsubmit="event.preventDefault();guideNouveauMembre()">
+             <input id="g-pseudo" placeholder="Je suis nouveau — mon prénom">
+             <button class="mini">Me créer</button></form>`
+        : `<form class="bloc" style="justify-content:center" onsubmit="event.preventDefault();guideRenommer()">
+             <input id="g-pseudo" placeholder="Changer mon prénom" value="${esc(USER.pseudo)}">
+             <button class="mini">C'est mon prénom</button></form>`)
+      +nav(null,2);
+
+  } else if(g.etape===2){
+    html = dots(2)+`<h2>Que sais-tu faire ?</h2>
+      <p>Touche les instruments que tu joues — même un peu.</p>
+      <div class="choix-instr">${INSTRUMENTS.map(i=>
+        `<button class="${g.instruments.has(i)?"on":""}" onclick="guideToggle('instruments','${i}')">${icone(i,17)} ${i}</button>`).join("")}</div>
+      <p class="mut">Ils deviendront tes badges, visibles par le groupe.</p>`+nav(1,3);
+
+  } else if(g.etape===3){
+    html = dots(3)+`<h2>Que veux-tu faire ?</h2>
+      <button class="gbtn" onclick="guideBut('monter')">&#127925; Monter un morceau<small>Choisir une chanson et réunir des musiciens</small></button>
+      <button class="gbtn" onclick="guideBut('rejoindre')">&#129309; Rejoindre un morceau<small>Voir qui cherche quelqu'un comme toi</small></button>
+      <button class="gbtn" onclick="guideBut('organiser')">&#127914; Organiser une jam<small>Créer un événement et voir ce qui sera jouable</small></button>
+      <button class="gbtn" onclick="finGuide();location.hash='#/aide'">&#128214; Juste comprendre l'appli<small>Ouvrir le mode d'emploi</small></button>`+nav(2,null);
+
+  } else if(g.etape===4 && g.but==="monter"){
+    html = dots(4)+`<h2>Quel morceau ?</h2>
+      <p>Choisis dans le répertoire&hellip;</p>
+      <select id="g-chanson" style="font-size:1rem;max-width:100%"><option value="">— choisir —</option>
+        ${S.chansons.map(c=>`<option value="${c.id}" ${c.id===g.chansonId?"selected":""}>${esc(c.titre)}${c.artiste?" — "+esc(c.artiste):""}</option>`).join("")}</select>
+      <p>&hellip; ou ajoute-le :</p>
+      <form class="bloc" style="justify-content:center">
+        <input id="g-titre" placeholder="Titre" value="${esc(g.titre)}">
+        <input id="g-artiste" placeholder="Artiste" value="${esc(g.artiste)}"></form>`+nav(3,5);
+
+  } else if(g.etape===4 && g.but==="rejoindre"){
+    const offres = [];
+    for(const p of S.projets.filter(p=>p.statut!=="joue"))
+      for(const s of S.slots.filter(s=>s.projet_id===p.id && !s.membre_id))
+        offres.push({s, p, moi:g.instruments.has(s.instrument)});
+    offres.sort((a,b)=>(b.moi?1:0)-(a.moi?1:0));
+    html = dots(4)+`<h2>Avec qui ?</h2>
+      <p>Voici les morceaux qui cherchent du monde :</p>`
+      +(offres.map(o=>{const c=chanson(o.p.chanson_id);
+        return `<button class="gbtn" onclick="guideRejoindre('${o.s.id}')">${icone(o.s.instrument,18)} « ${esc(c.titre)} » cherche ${ARTICLE[o.s.instrument]||o.s.instrument}
+          <small>${o.moi?"&#11088; C'est un de tes instruments !":"projet de "+esc(pseudo(o.p.cree_par))}</small></button>`;}).join("")
+        ||`<p class="vide">Personne ne cherche de musicien pour l'instant. Tu peux monter ton propre morceau !</p>`)
+      +nav(3,null);
+
+  } else if(g.etape===4 && g.but==="organiser"){
+    html = dots(4)+`<h2>Ta jam</h2>
+      <p>Donne-lui un nom :</p>
+      <form class="bloc" style="justify-content:center">
+        <input id="g-nom" placeholder="ex. Jam de rentrée" value="${esc(g.nom)}" style="min-width:220px"></form>`+nav(3,6);
+
+  } else if(g.etape===5){ // monter : avec qui ?
+    const pseudoProjet = {chanson_id:g.chansonId||null};
+    html = dots(4)+`<h2>Avec qui ?</h2>
+      <p>De quels instruments as-tu besoin ?</p>
+      <div class="choix-instr">${INSTRUMENTS.map(i=>
+        `<button class="${g.besoins.has(i)?"on":""}" onclick="guideToggle('besoins','${i}')">${icone(i,17)} ${i}</button>`).join("")}</div>
+      <div style="text-align:left">${[...g.besoins].map(i=>{
+        const cands = candidats(pseudoProjet,i);
+        return cands.length?`<p style="margin:8px 0">${badgeInstr(i)} :
+          ${cands.map(m=>`<button class="mini ${g.invites[i]===m.id?"prim":""}" onclick="guideInviter('${i}','${m.id}')">${m.id===USER.id?"moi ("+esc(m.pseudo)+")":esc(m.pseudo)}</button>`).join(" ")}</p>`:"";
+      }).join("")}</div>
+      <p class="mut">Clique un prénom pour l'inviter (ou toi-même pour prendre la place). Tu pourras compléter plus tard.</p>`+nav(4,6);
+
+  } else if(g.etape===6){ // quand ?
+    html = dots(5)+`<h2>Quand ?</h2>
+      <p>${g.but==="monter"?"Première répétition — pas encore de date ? Laisse vide.":"Date de la jam :"}</p>
+      <form class="bloc" style="justify-content:center">
+        <input id="g-date" type="datetime-local" value="${g.date}">
+        <input id="g-lieu" placeholder="Lieu" value="${esc(g.lieu)}"></form>`
+      +nav(g.but==="monter"?5:4,7);
+
+  } else if(g.etape===7){ // récapitulatif
+    const ch = g.chansonId ? chanson(g.chansonId) : null;
+    const lignes = g.but==="monter"
+      ? [`&#127925; Morceau : <b>${esc(ch?ch.titre:g.titre)}</b>`,
+         `&#129309; Besoins : ${[...g.besoins].map(i=>badgeInstr(i)).join(" ")}`,
+         Object.keys(g.invites).length?`&#9993;&#65039; Invitations : ${Object.entries(g.invites).map(([i,m])=>esc(pseudo(m))+" ("+i+")").join(", ")}`:"",
+         g.date?`&#128197; Première répète : ${dateFr(g.date)}${g.lieu?" — "+esc(g.lieu):""}`:""]
+      : [`&#127914; Jam : <b>${esc(g.nom)}</b>`,
+         `&#128197; ${g.date?dateFr(g.date):"?"}${g.lieu?" — "+esc(g.lieu):""}`,
+         `&#10004; Ta présence sera confirmée d'office`];
+    html = dots(5)+`<h2>On y va ?</h2>
+      <div class="carte" style="text-align:left">${lignes.filter(Boolean).map(l=>`<p>${l}</p>`).join("")}</div>
+      <button class="gbtn" style="text-align:center;border-color:var(--acc);color:var(--acc);font-weight:600" onclick="guideTerminer()">&#127881; C'est parti !</button>`
+      +nav(6,null);
+
+  } else if(g.etape==="fin"){
+    html = `<h2>&#127881; C'est fait !</h2>`
+      +g.fait.map(f=>`<p>&#10004; ${f}</p>`).join("")
+      +`<button class="gbtn" style="text-align:center" onclick="const h='${g.lienFin}';finGuide();location.hash=h">Voir le résultat</button>
+        <button class="gbtn" style="text-align:center" onclick="demarrerGuide();vueGuide()">&#8635; Faire autre chose</button>`;
+  }
+
+  $app.innerHTML = `<div class="guide">${html}
+    <p style="margin-top:26px"><a href="#/moi" onclick="finGuide()" style="color:var(--mut)">Quitter le mode guidé</a></p></div>`;
+}
+
+async function guideVa(n){
+  const g = GUIDE;
+  if(g.etape===2 && n>2){ // enregistrer les badges cochés
+    for(const i of g.instruments) if(!badges(USER.id).includes(i))
+      await API.insert("competences",{membre_id:USER.id,chanson_id:null,instrument:i,statut:"jouable"});
+  }
+  if(g.etape===4 && g.but==="monter" && n===5){
+    g.chansonId = document.getElementById("g-chanson").value;
+    g.titre = document.getElementById("g-titre").value.trim();
+    g.artiste = document.getElementById("g-artiste").value.trim();
+    if(!g.chansonId && !g.titre){ alert("Choisis une chanson ou tape un titre."); return; }
+    if(g.chansonId){ g.titre=""; g.artiste=""; }
+  }
+  if(g.etape===4 && g.but==="organiser" && n===6){
+    g.nom = document.getElementById("g-nom").value.trim();
+    if(!g.nom){ alert("Donne un nom à ta jam."); return; }
+  }
+  if(g.etape===6 && n===7){
+    g.date = document.getElementById("g-date").value;
+    g.lieu = document.getElementById("g-lieu").value.trim();
+    if(g.but==="organiser" && !g.date){ alert("Une jam a besoin d'une date !"); return; }
+  }
+  g.etape = n;
+  vueGuide();
+}
+async function guideChoisirMembre(id){ await DemoAPI.setUser(id); GUIDE.instruments=new Set(badges(USER.id)); renderUserZone(); vueGuide(); }
+async function guideNouveauMembre(){
+  const p = document.getElementById("g-pseudo").value.trim(); if(!p) return;
+  const m = await API.insert("membres",{pseudo:p});
+  await DemoAPI.setUser(m.id); GUIDE.instruments=new Set(); renderUserZone(); vueGuide();
+}
+async function guideRenommer(){
+  const p = document.getElementById("g-pseudo").value.trim(); if(!p) return;
+  await API.update("membres",USER.id,{pseudo:p}); USER.pseudo=p; renderUserZone(); vueGuide();
+}
+function guideToggle(champ,i){ const s=GUIDE[champ]; s.has(i)?s.delete(i):s.add(i); if(champ==="besoins"&&!s.has(i)) delete GUIDE.invites[i]; vueGuide(); }
+function guideBut(but){ GUIDE.but=but; GUIDE.etape=4; vueGuide(); }
+function guideInviter(instr,mid){ GUIDE.invites[instr] = GUIDE.invites[instr]===mid ? undefined : mid; if(!GUIDE.invites[instr]) delete GUIDE.invites[instr]; vueGuide(); }
+async function guideRejoindre(slotId){
+  const g=GUIDE, s=parId("slots",slotId), p=parId("projets",s.projet_id), c=chanson(p.chanson_id);
+  await API.update("slots",slotId,{membre_id:USER.id,invitation:"accepte"});
+  if(!badges(USER.id).includes(s.instrument))
+    await API.insert("competences",{membre_id:USER.id,chanson_id:null,instrument:s.instrument,statut:"jouable"});
+  g.fait=[`Tu tiens désormais ${ARTICLE[s.instrument]||s.instrument} sur « ${esc(c.titre)} »`];
+  g.lienFin="#/projet/"+p.id; g.etape="fin";
+  vueGuide();
+}
+async function guideTerminer(){
+  const g = GUIDE; g.fait=[];
+  if(g.but==="monter"){
+    let ch = g.chansonId ? chanson(g.chansonId) : null;
+    if(!ch){
+      ch = await API.insert("chansons",{titre:g.titre,artiste:g.artiste,tonalite:"",tempo:null,lien:"",cree_par:USER.id,cree_le:new Date().toISOString()});
+      g.fait.push(`Chanson « ${esc(ch.titre)} » ajoutée au répertoire`);
+    }
+    const p = await API.insert("projets",{chanson_id:ch.id,statut:"brouillon",cree_par:USER.id,cree_le:new Date().toISOString()});
+    g.fait.push(`Projet « ${esc(ch.titre)} » créé — c'est toi qui le pilotes`);
+    for(const i of g.besoins){
+      const mid = g.invites[i]||null;
+      await API.insert("slots",{projet_id:p.id,instrument:i,besoin:"indispensable",
+        membre_id:mid, invitation:mid?(mid===USER.id?"accepte":"en_attente"):null});
+    }
+    const inv = Object.entries(g.invites).filter(([,m])=>m && m!==USER.id);
+    if(inv.length) g.fait.push(`Invitations envoyées : ${inv.map(([i,m])=>esc(pseudo(m))+" ("+i+")").join(", ")}`);
+    if(g.date){
+      await API.insert("repetitions",{projet_id:p.id,date:new Date(g.date).toISOString(),lieu:g.lieu,notes:""});
+      g.fait.push(`Première répétition : ${dateFr(g.date)}`);
+    }
+    g.lienFin = "#/projet/"+p.id;
+  } else if(g.but==="organiser"){
+    const e = await API.insert("evenements",{nom:g.nom,date:new Date(g.date).toISOString(),lieu:g.lieu,cree_par:USER.id,cree_le:new Date().toISOString()});
+    await API.insert("participations",{evenement_id:e.id,membre_id:USER.id,statut:"confirme"});
+    g.fait.push(`Jam « ${esc(g.nom)} » créée pour le ${dateFr(g.date)}`,"Ta présence est confirmée");
+    g.lienFin = "#/evenement/"+e.id;
+  }
+  g.etape="fin";
+  vueGuide();
+}
+
+/* ============================================================
+   PARTITIONS — dépôt centralisé des PDF (glisser-déposer)
+   ============================================================ */
+let FICHIERS_EN_ATTENTE = [];
+
+function devinerCible(nomFichier){
+  const bas = nomFichier.toLowerCase();
+  const p = S.projets.find(p=>{const c=chanson(p.chanson_id);
+    return c && c.titre.toLowerCase().split(/\s+/).some(mot=>mot.length>3 && bas.includes(mot));});
+  const i = INSTRUMENTS.find(i=>bas.includes(i));
+  return {projetId: p?p.id:(S.projets[0]?S.projets[0].id:""), instrument: i||"autre"};
+}
+function ajouterFichiers(files){
+  for(const f of files){
+    if(f.type!=="application/pdf" && !f.name.toLowerCase().endsWith(".pdf")){ alert(f.name+" : seuls les PDF sont acceptés."); continue; }
+    FICHIERS_EN_ATTENTE.push({file:f, ...devinerCible(f.name)});
+  }
+  vuePartitions();
+}
+function deposerFichiers(ev){ ev.preventDefault(); ev.currentTarget.classList.remove("survol"); ajouterFichiers(ev.dataTransfer.files); }
+async function enregistrerFichier(ix){
+  const f = FICHIERS_EN_ATTENTE[ix];
+  const projetId = document.getElementById("fx-p-"+ix).value;
+  const instrument = document.getElementById("fx-i-"+ix).value;
+  if(!projetId){ alert("Il faut d'abord un projet : Répertoire → « Monter un projet »."); return; }
+  const res = await API.uploadPartition(projetId, instrument, f.file);
+  if(res!==null) FICHIERS_EN_ATTENTE.splice(ix,1);
+  vuePartitions();
+}
+function retirerFichier(ix){ FICHIERS_EN_ATTENTE.splice(ix,1); vuePartitions(); }
+
+function vuePartitions(){
+  $app.innerHTML = `<h2>Partitions (PDF)</h2>
+  <div class="carte">
+    <div class="dropzone" onclick="document.getElementById('dz-input').click()"
+      ondragover="event.preventDefault();this.classList.add('survol')"
+      ondragleave="this.classList.remove('survol')"
+      ondrop="deposerFichiers(event)">
+      &#128196; <b>Glisse tes PDF ici</b><br><span class="mut">ou clique pour choisir des fichiers — plusieurs à la fois si tu veux</span>
+    </div>
+    <input id="dz-input" type="file" accept="application/pdf" multiple hidden onchange="ajouterFichiers(this.files);this.value=''">
+    ${FICHIERS_EN_ATTENTE.map((f,ix)=>`<div class="ligne" style="margin-top:10px">
+      <span>&#128196; ${esc(f.file.name)}</span>
+      <select id="fx-p-${ix}">${S.projets.map(p=>{const c=chanson(p.chanson_id);
+        return `<option value="${p.id}" ${p.id===f.projetId?"selected":""}>${esc(c?c.titre:"?")}</option>`;}).join("")||'<option value="">aucun projet</option>'}</select>
+      <select id="fx-i-${ix}">${optInstruments(f.instrument)}</select>
+      <button class="mini prim" onclick="enregistrerFichier(${ix})">Enregistrer</button>
+      <button class="mini" onclick="retirerFichier(${ix})">&#10005;</button></div>`).join("")}
+    ${FICHIERS_EN_ATTENTE.length?`<p class="mut">Vérifie le morceau et l'instrument devinés, puis « Enregistrer ».</p>`:""}
+  </div>
+  <h3>Toutes les partitions du groupe</h3>
+  ${S.projets.map(p=>{
+    const c = chanson(p.chanson_id);
+    const parts = S.partitions.filter(pt=>pt.projet_id===p.id).sort((a,b)=>a.instrument.localeCompare(b.instrument)||b.version-a.version);
+    if(!parts.length) return "";
+    return `<div class="carte"><b>${esc(c?c.titre:"?")}</b>
+      ${parts.map(pt=>`<div class="ligne" style="margin:4px 0">${badgeInstr(pt.instrument)}
+        <span>${esc(pt.fichier.split("/").pop())}</span><span class="mut">v${pt.version}</span>
+        <span class="esp"></span><button class="mini" onclick="telechargerPartition('${pt.id}')">ouvrir</button></div>`).join("")}</div>`;
+  }).join("")||`<p class="vide">Aucune partition pour l'instant. Dépose un premier PDF ci-dessus !</p>`}`;
+}
+
+/* ============================================================
+   AIDE — mode d'emploi intégré, langage simple
+   ============================================================ */
+function vueAide(){
+  $app.innerHTML = `<div class="aide"><h2>&#128214; Mode d'emploi</h2>
+  <p>Jam Maker + aide un groupe d'amis musiciens à <b>monter des morceaux ensemble</b> et à savoir
+  <b>ce qui sera jouable</b> le jour d'une jam. Pas besoin d'être fort en informatique :
+  le bouton <a href="#/guide" style="color:var(--acc)">&#10024; Guidé</a> en haut te pose les questions une par une.</p>
+
+  <details open><summary>&#128640; Démarrer en 3 minutes</summary><ol>
+    <li>Clique sur <b>&#10024; Guidé</b> en haut de l'écran.</li>
+    <li>Réponds aux questions : qui tu es, ce que tu joues, ce que tu veux faire.</li>
+    <li>C'est tout — l'appli crée le reste pour toi.</li></ol></details>
+
+  <details><summary>&#127908; Dire ce que je sais jouer</summary><ol>
+    <li>Va sur <b>Ma page</b>.</li>
+    <li>Dans « Mes badges », choisis un instrument et clique <b>+ badge général</b>.</li>
+    <li>Si tu connais un morceau précis, ajoute-le dans « Mes morceaux acquis ».</li></ol>
+    <p>Tes badges sont visibles par tout le groupe : c'est comme ça qu'on pense à toi pour un morceau !</p></details>
+
+  <details><summary>&#127925; Proposer un morceau au groupe</summary><ol>
+    <li>Va dans <b>Répertoire</b> et ajoute la chanson si elle n'y est pas.</li>
+    <li>Clique <b>Monter un projet</b> à côté de la chanson.</li>
+    <li>Ajoute les instruments nécessaires (les « slots ») et invite des membres.</li>
+    <li>L'appli te <b>conseille qui inviter</b> selon ce que chacun sait jouer.</li></ol></details>
+
+  <details><summary>&#9993;&#65039; Répondre à une invitation</summary>
+    <p>Quand quelqu'un t'invite sur un morceau, l'invitation apparaît <b>en haut de Ma page</b>,
+    dans un cadre doré. Clique <b>Accepter</b> ou <b>Refuser</b>. C'est tout.</p></details>
+
+  <details><summary>&#129345; Après une répétition</summary>
+    <p>Ouvre le projet du morceau, ligne « Répétitions » : dis si pour toi <b>« ça tient »</b> ou
+    <b>« à retravailler »</b>. Quand tout le monde dit « ça tient », le morceau devient <b>jouable</b>
+    (la barre monte à 100 %).</p></details>
+
+  <details><summary>&#127914; Participer à une jam</summary><ol>
+    <li>Va dans <b>Événements</b> et ouvre la jam.</li>
+    <li>Clique <b>J'y serai</b>.</li>
+    <li>La « playlist potentielle » se met à jour toute seule : elle montre ce qui est jouable
+    selon qui vient. Vert = l'équipe est là, orange = jouable avec un remplaçant, rouge = pas jouable.</li></ol></details>
+
+  <details><summary>&#128196; Déposer une partition (PDF)</summary><ol>
+    <li>Va dans l'onglet <b>Partitions</b>.</li>
+    <li>Glisse ton fichier PDF dans le grand cadre (ou clique dessus pour le chercher).</li>
+    <li>Vérifie le morceau et l'instrument, puis clique <b>Enregistrer</b>.</li></ol>
+    <p>Astuce : nomme tes fichiers comme « hotel-california-basse.pdf » et l'appli devine toute seule où les ranger.</p></details>
+
+  <details><summary>&#128366; Imprimer mon cahier de jam</summary>
+    <p>Sur la page d'un événement, carte « Cahiers de jam » : clique sur <b>ton prénom</b>.
+    Tu reçois un PDF avec la liste des morceaux dans l'ordre et <b>tes</b> partitions. À imprimer ou à garder sur la tablette.</p></details>
+
+  <details><summary>&#128218; Les mots de l'appli</summary><ul>
+    <li><b>Badge</b> : un instrument que tu joues.</li>
+    <li><b>Projet</b> : un morceau que le groupe est en train de monter.</li>
+    <li><b>Slot</b> : une place d'instrument dans un morceau (ex. « il faut un bassiste »).</li>
+    <li><b>Complétude</b> : la barre de progression d'un morceau — 100 % = tout le monde dit « ça tient ».</li>
+    <li><b>Jouabilité</b> : pour une jam donnée, le morceau passe-t-il avec les gens présents ?</li>
+    <li><b>Cahier de jam</b> : ton PDF personnel avec la setlist et tes partitions.</li></ul></details>
+
+  <details><summary>&#128295; Un problème ?</summary><ul>
+    <li>Un doute ? Repasse par le bouton <b>&#10024; Guidé</b> : il ne casse rien.</li>
+    <li>En <b>mode démo</b>, tout est enregistré dans TON navigateur uniquement — les autres ne voient pas tes changements.</li>
+    <li>Rien ne s'affiche ? Recharge la page (touche F5).</li>
+    <li>Le reste : demande à la personne qui gère l'appli dans le groupe.</li></ul></details>
+  </div>`;
 }
 
 /* ============================================================
@@ -558,6 +1010,10 @@ async function supprimerSlot(id){ await API.remove("slots",id); rafraichir(); }
 async function inviter(slotId){
   const mid = document.getElementById("cand-"+slotId).value;
   if(!mid) return;
+  await API.update("slots",slotId,{membre_id:mid,invitation:"en_attente"});
+  rafraichir();
+}
+async function inviterDirect(slotId,mid){
   await API.update("slots",slotId,{membre_id:mid,invitation:"en_attente"});
   rafraichir();
 }
@@ -691,6 +1147,8 @@ async function boot(){
   if(!MODE_DEMO) await SupaAPI.init();
   await API.load();
   renderUserZone();
+  // Première visite : on démarre en mode guidé (questionnaire pas à pas)
+  if(USER && !localStorage.getItem(CLE_GUIDE) && !location.hash) location.hash = "#/guide";
   route();
   if(!MODE_DEMO){
     SupaAPI.sb.auth.onAuthStateChange(async (evt)=>{ if(evt==="SIGNED_IN"){ await API.load(); rafraichir(); } });
