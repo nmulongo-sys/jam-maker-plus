@@ -3,7 +3,7 @@
 Outil collaboratif pour collectifs de musiciens : répertoire de chansons, compétences des membres, projets de morceaux avec répétitions et complétude, événements avec playlist calculée automatiquement, et génération du cahier de jam PDF de chaque participant.
 
 **En ligne** : https://nmulongo-sys.github.io/jam-maker-plus/ (mode démo immédiat), ou ouvrir `index.html` dans un navigateur.
-**Statut** : v0.2 (mode guidé, badges, conseils, dépôt PDF, aide) • fichier HTML unique • backend Supabase optionnel • pdf-lib via CDN.
+**Statut** : v0.2 (mode guidé, badges, conseils, dépôt PDF, aide) • *theme-ready* portail (révision 2026-07-03) • fichier HTML unique • backend Supabase optionnel • pdf-lib via CDN.
 
 ## Le concept
 
@@ -50,6 +50,7 @@ Le cœur du modèle est le **triplet Personne × Chanson × Instrument** avec un
 - **Cahier PDF** : `genererCahier(evtId, membreId)` avec [pdf-lib](https://pdf-lib.js.org) (CDN) — page de garde A4 (setlist annotée tonalité/tempo/instrument du membre) puis fusion des PDF de partitions (dernière version par instrument), page finale listant les partitions manquantes.
 - **Convention compétences** : dans la table `competences`, `chanson_id NULL` = badge général d'instrument ; `chanson_id` renseigné = morceau acquis (ex. « Hotel California – guitare »).
 - **Sécurité (v0.2)** : RLS « communauté de confiance » — lecture pour tous les authentifiés, écriture sur ses propres données ; le créateur d'un projet gère slots et répétitions, l'organisateur d'un événement gère la playlist.
+- **Contrat de thème (portail « Formation Musicale »)** : l'app est *theme-ready* sans être forkée. Les variables internes (`--bg`, `--panel`, `--panel2`, `--line`, `--txt`, `--mut`, `--acc`, `--acc2`) pointent vers les jetons partagés `--fm-*`, dont les **valeurs par défaut = le look sombre actuel** (rendu identique sans thème) ; `button.prim` utilise `--fm-accent-ink` et les encarts jadis codés en dur (bandeau démo, conseils, bouton instrument sélectionné) passent par `--panel2`/`--line`. Un **chargeur** synchrone dans le `<head>` (après le `<style>` de l'app) résout le thème dans l'ordre : `?theme=clair|sombre` (mémorisé), puis `localStorage['fm-theme']` (partagé avec le portail, même origine), sinon défaut ; il pose `data-fm-theme` sur `<html>`. Thème externe optionnel via `?themeUrl=/portal-theme-tokens.css`. Repli try/catch silencieux. Les status *rouge/orange/vert* restent hors contrat (couleurs sémantiques). Aucun impact sur la logique métier ni le backend.
 
 ## Feuille de route
 
@@ -61,6 +62,13 @@ Le cœur du modèle est le **triplet Personne × Chanson × Instrument** avec un
 Aucun projet open source existant ne couvre le modèle compétences → invitations → complétude → playlist automatique. Pour la génération de setlists PDF, voir [laenzlinger/setlist](https://github.com/laenzlinger/setlist) ; pour la gestion simple de setlists, [Setlist-Planner](https://github.com/PieterCooreman/Setlist-Planner).
 
 ## Journal de développement
+
+### 2026-07-03 — theme-ready : adoption du thème du portail (clair/sombre)
+- **Contrat de thème `--fm-*`.** Les variables internes de couleur (`--bg`, `--panel`, `--panel2`, `--line`, `--txt`, `--mut`, `--acc`, `--acc2`) sont recâblées sur les jetons partagés du portail, avec valeurs par défaut = look sombre actuel → **rendu inchangé sans thème**.
+- **Chargeur de thème** synchrone ajouté dans le `<head>` (après le `<style>`) : résolution `?theme=clair|sombre` → `localStorage['fm-theme']` → défaut ; pose `data-fm-theme` sur `<html>` (pas de flash) ; thème externe optionnel via `?themeUrl=`. Repli try/catch silencieux.
+- **Retouches de cohérence** : `button.prim` utilise `--fm-accent-ink` (lisible sur l'accent des deux thèmes) ; les fonds codés en dur du bandeau démo, des encarts « conseils » et du bouton d'instrument sélectionné passent sur `--panel2`/`--line` pour rester corrects en thème clair. Police d'interface exposée via `--fm-font-ui`.
+- **Inchangé (compatibilité totale)** : logique métier, couche données, backend Supabase, cahier PDF, mode guidé, clés `localStorage`. Couleurs de statut *rouge/orange/vert* hors contrat.
+- Validé au rendu headless dans les trois états (défaut, `?theme=clair`, `?theme=sombre`).
 
 ### 2026-07-02 — v0.2 : accessibilité aux non-initiés
 - **Mode guidé** (`#/guide`) : questionnaire pas à pas — qui es-tu / que sais-tu faire / que veux-tu (monter un morceau, rejoindre, organiser une jam) / avec qui / quand — qui crée les objets à la place de l'utilisateur ; s'ouvre automatiquement à la première visite (clé `jammaker.guide.vu`), bouton ✨ permanent dans la barre.
