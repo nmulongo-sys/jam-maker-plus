@@ -6,12 +6,13 @@
 <title>Jam Maker +</title>
 <style>
   :root{
-    --bg:#14141c; --panel:#1e1e2a; --panel2:#262636; --line:#34344a;
-    --txt:#e8e8f0; --mut:#9a9ab0; --acc:#f0a832; --acc2:#5ec8a0;
+    /* Couleurs de l'app pilotees par le contrat de theme du portail (--fm-*) */
+    --bg:var(--fm-bg); --panel:var(--fm-panel); --panel2:var(--fm-panel-2); --line:var(--fm-line);
+    --txt:var(--fm-ink); --mut:var(--fm-sub); --acc:var(--fm-accent); --acc2:var(--fm-accent-2);
     --rouge:#e06060; --orange:#e0a050; --vert:#5ec8a0;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);line-height:1.45}
+  body{margin:0;font-family:var(--fm-font-ui);background:var(--bg);color:var(--txt);line-height:1.45}
   header{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;top:0;z-index:5}
   header h1{font-size:1.15rem;margin:0;color:var(--acc);white-space:nowrap}
   nav{display:flex;gap:4px;flex-wrap:wrap}
@@ -35,7 +36,7 @@
   .pill{font-size:.78rem;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
   button,select,input,textarea{font:inherit;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
   button{cursor:pointer}
-  button.prim{background:var(--acc);border-color:var(--acc);color:#14141c;font-weight:600}
+  button.prim{background:var(--acc);border-color:var(--acc);color:var(--fm-accent-ink);font-weight:600}
   button.mini{font-size:.8rem;padding:3px 9px}
   form.bloc{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
   .jauge{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;flex:1;min-width:80px}
@@ -43,7 +44,7 @@
   table{width:100%;border-collapse:collapse;font-size:.9rem}
   td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
   th{color:var(--mut);font-weight:500;font-size:.8rem}
-  .bandeau-demo{background:#3a3220;color:var(--acc);font-size:.82rem;padding:6px 18px;text-align:center}
+  .bandeau-demo{background:var(--panel2);color:var(--acc);font-size:.82rem;padding:6px 18px;text-align:center}
   a{color:var(--acc2)}
   .vide{color:var(--mut);font-style:italic;font-size:.9rem}
   /* Badges d'instruments */
@@ -52,7 +53,7 @@
   .badge.gros{font-size:.95rem;padding:5px 14px 5px 6px}
   .badge.gros .ico{width:28px;height:28px}
   /* Conseils contextualisés */
-  .conseil{display:flex;align-items:center;gap:10px;background:#232e1e;border:1px solid #46603a;border-radius:10px;padding:8px 12px;margin:6px 0;font-size:.9rem;flex-wrap:wrap}
+  .conseil{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:6px 0;font-size:.9rem;flex-wrap:wrap}
   .conseil .amp{font-size:1.05rem}
   /* Mode guidé */
   .guide{max-width:580px;margin:0 auto;text-align:center}
@@ -66,7 +67,7 @@
   .gbtn small{display:block;color:var(--mut);font-size:.85rem;margin-top:2px;font-weight:400}
   .choix-instr{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
   .choix-instr button{border-radius:999px;display:inline-flex;align-items:center;gap:6px;font-size:.95rem;padding:8px 14px}
-  .choix-instr button.on{border-color:var(--acc);background:#3a3220;color:var(--acc)}
+  .choix-instr button.on{border-color:var(--acc);background:var(--panel2);color:var(--acc)}
   /* Dépôt de partitions */
   .dropzone{border:2px dashed var(--line);border-radius:14px;padding:34px 20px;text-align:center;color:var(--mut);cursor:pointer;font-size:1.02rem;transition:border-color .2s}
   .dropzone.survol,.dropzone:hover{border-color:var(--acc);color:var(--txt)}
@@ -75,6 +76,49 @@
   .aide summary{cursor:pointer;font-weight:600;font-size:1rem}
   .aide details p,.aide details ol,.aide details ul{font-size:.95rem}
   .aide li{margin:6px 0}
+</style>
+
+<!-- ==== FM Theme Hook — portail « Formation Musicale » (thème optionnel, app 100% autonome/offline) ==== -->
+<script>
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search);
+    var t  = qs.get('theme');
+    if (t==='clair' || t==='sombre'){ try{ localStorage.setItem('fm-theme', t); }catch(e){} }
+    else { try{ t = localStorage.getItem('fm-theme'); }catch(e){ t=null; } }
+    if (t==='clair' || t==='sombre'){ document.documentElement.setAttribute('data-fm-theme', t); }
+    var tu = qs.get('themeUrl');   // thème externe optionnel : ?themeUrl=/portal-theme-tokens.css
+    if (tu){ var l=document.createElement('link'); l.rel='stylesheet'; l.href=tu; document.head.appendChild(l); }
+  }catch(e){ /* repli silencieux : l'app garde ses valeurs par défaut */ }
+})();
+</script>
+<style>
+  /* Valeurs PAR DÉFAUT = look actuel de Jam Maker + (sombre). Sans thème fourni, rien ne change. */
+  :root{
+    --fm-bg:#14141c; --fm-panel:#1e1e2a; --fm-panel-2:#262636; --fm-line:#34344a;
+    --fm-ink:#e8e8f0; --fm-sub:#9a9ab0; --fm-accent:#f0a832; --fm-accent-2:#5ec8a0;
+    --fm-accent-ink:#14141c; --fm-staff:rgba(201,162,75,.05);
+    --fm-font-display:'Cormorant Garamond', Georgia, serif;
+    --fm-font-ui:system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  :root, body{ transition: background-color .5s ease, color .5s ease, border-color .5s ease; }
+
+  /* Thème CLAIR du portail (crème / bois / cuivre) */
+  html[data-fm-theme="clair"]{
+    --fm-bg:#efe7d8; --fm-panel:#f7f1e6; --fm-panel-2:#f0e7d6;
+    --fm-ink:#2a221b; --fm-sub:#6b5d4c; --fm-line:rgba(107,74,46,.16);
+    --fm-accent:#b3763b; --fm-accent-2:#6b4a2e; --fm-accent-ink:#f7f1e6;
+    --fm-staff:rgba(107,74,46,.06);
+    --fm-font-ui:'Work Sans', system-ui, sans-serif;
+  }
+  /* Thème SOMBRE du portail (noir laqué / or / ivoire) */
+  html[data-fm-theme="sombre"]{
+    --fm-bg:#0e0e10; --fm-panel:#17151a; --fm-panel-2:#1c1a1f;
+    --fm-ink:#f5f0e6; --fm-sub:#b5aea2; --fm-line:rgba(201,162,75,.18);
+    --fm-accent:#c9a24b; --fm-accent-2:#7a6a3a; --fm-accent-ink:#0e0e10;
+    --fm-staff:rgba(201,162,75,.05);
+    --fm-font-ui:'Work Sans', system-ui, sans-serif;
+  }
 </style>
 </head>
 <body>
